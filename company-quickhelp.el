@@ -44,6 +44,16 @@
   "Documentation popups for `company-mode'"
   :group 'company)
 
+(defgroup company-quickhelp-faces nil
+  "The faces of `company-quickhelp'."
+  :group 'company-quickhelp
+  :group 'faces)
+
+(defface company-quickhelp-face
+  '((t (:inherit tooltip)))
+  "Face used for displaying the tooltip."
+  :group 'company-quickhelp-faces)
+
 (defcustom company-quickhelp-use-propertized-text nil
   "Allow the text to have properties like color, font size, etc."
   :type '(choice (boolean :tag "Allow"))
@@ -209,16 +219,18 @@ currently active `company' completion candidate."
                         (> (cdr w-h) max-height))
                     (setq doc (pos-tip-truncate-string doc max-width max-height)
                           w-h (pos-tip-string-width-height doc))))
-                  (pos-tip-show-no-propertize doc fg-bg pos nil timeout
-                                              (pos-tip-tooltip-width (car w-h) (frame-char-width frame))
-                                              (pos-tip-tooltip-height (cdr w-h) (frame-char-height frame) frame)
-                                              nil (+ overlay-width overlay-position) dy))
-              (pos-tip-show doc fg-bg pos nil timeout width nil
+                  (let* ((str (propertize doc 'face 'company-quickhelp-face)))
+                    (pos-tip-show-no-propertize str fg-bg pos nil timeout
+                                                (pos-tip-tooltip-width (car w-h) (window-font-width nil 'company-quickhelp-face))
+                                                ;;(pos-tip-tooltip-height (cdr w-h) (window-font-height nil 'company-quickhelp-face) frame) ;; height generally truncated short
+                                                nil ;; dummy height for testing
+                                                nil (+ overlay-width overlay-position) dy)))
+              (pos-tip-show doc fg-bg (overlay-start ovl) nil timeout width nil
                             (+ overlay-width overlay-position) dy))))))))
 
 (defun company-quickhelp--set-timer ()
   (when (or (null company-quickhelp--timer)
-        (eq this-command #'company-quickhelp-manual-begin))
+            (eq this-command #'company-quickhelp-manual-begin))
     (setq company-quickhelp--timer
           (run-with-idle-timer company-quickhelp-delay nil
                                'company-quickhelp--show))))
